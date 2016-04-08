@@ -33,14 +33,61 @@ def ast2graph():
 def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list):
     left_module_list = module_list[:len(module_list)/2]
     right_module_list = module_list[len(module_list)/2:]
-    print left_module_list
-    print right_module_list
+    # print left_module_list
+    # print right_module_list
 
     #initial partition
     # print FS('inst_mem_ctrl_tran',module_wire_dict,wire_module_dict,left_module_list,right_module_list)
     # print TE('inst_mem_ctrl_tran',module_wire_dict,wire_module_dict,left_module_list,right_module_list)
     module_gain_dict = {module: FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) for module in module_list}
-    print module_gain_dict
+    # print module_gain_dict
+    locked = []
+    gain_list = []
+    step_list = []
+    while len(locked) < len(module_list):
+        module_sorted = sorted(module_gain_dict.keys(), key=lambda k: module_gain_dict[k], reverse=True)
+        # print module_sorted
+        module_chosen = [module for module in module_sorted if module not in locked][0]
+        locked.append(module_chosen)
+        gain_list.append(module_gain_dict[module_chosen])
+        step_list.append(module_chosen)
+        # print module_chosen
+        critical_nets = module_wire_dict[module_chosen]
+        if module_chosen in left_module_list:
+            left_module_list.remove(module_chosen)
+            right_module_list.append(module_chosen)
+        else:
+            left_module_list.append(module_chosen)
+            right_module_list.remove(module_chosen)
+        # move module_chosen
+        for net in critical_nets:
+            for module in wire_module_dict[net]:
+                module_gain_dict[module] = FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list)
+        # updated gain
+    # print gain_list
+    # print step_list
+    max_gain, step = 0, 0
+    for i in range(len(gain_list)):
+        if sum(gain_list[0:i]) > max_gain:
+            max_gain = sum(gain_list[:i])
+            step = i
+    # print max_gain, step
+    max_gain_step = step_list[:step]
+    max_gain_list = gain_list[:step]
+    # print max_gain_step
+    # print max_gain_list
+    left_module_list = module_list[:len(module_list)/2]
+    right_module_list = module_list[len(module_list)/2:]
+    for module in max_gain_step:
+        if module in left_module_list:
+            left_module_list.remove(module)
+            right_module_list.append(module)
+        else:
+            left_module_list.append(module)
+            right_module_list.remove(module)
+    print left_module_list
+    print right_module_list
+
 
 def FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list):
     all_net = module_wire_dict[module]
