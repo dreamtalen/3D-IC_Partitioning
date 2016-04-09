@@ -57,23 +57,11 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
 
     while len(locked) < len(module_list):
         module_sorted = sorted(module_gain_dict.keys(), key=lambda k: module_gain_dict[k], reverse=True)
-        # print module_sorted
-        for module in module_sorted:
-            if module in left_module_list:
-                left_module_area = sum([module_area_dict[k] for k in left_module_list]) - module_area_dict[module]
-                if left_module_area > high_border or left_module_area < low_border:
-                    module_sorted.remove(module)
-                else:pass
-            else:
-                left_module_area = sum([module_area_dict[k] for k in left_module_list]) + module_area_dict[module]
-                if left_module_area > high_border or left_module_area < low_border:
-                    module_sorted.remove(module)
-                else:pass
         try:
-            module_chosen = [module for module in module_sorted if module not in locked][0]
+            module_chosen = [module for module in module_sorted if module not in locked and area_constraint(module, low_border, high_border, left_module_list, module_area_dict)][0]
         except:
             break
-
+        # print 'choose', module_chosen, sum([module_area_dict[k] for k in left_module_list]) - module_area_dict[module_chosen]
         locked.append(module_chosen)
         gain_list.append(module_gain_dict[module_chosen])
         step_list.append(module_chosen)
@@ -116,6 +104,17 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
 
+def area_constraint(module, low_border, high_border, left_module_list, module_area_dict):
+    if module in left_module_list:
+        left_area =  sum([module_area_dict[module] for module in left_module_list]) - module_area_dict[module]
+        if low_border <= left_area <= high_border:
+            return True
+        else: return False
+    else:
+        left_area =  sum([module_area_dict[module] for module in left_module_list]) + module_area_dict[module]
+        if low_border <= left_area <= high_border:
+            return True
+        else: return False
 
 def FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list):
     all_net = module_wire_dict[module]
