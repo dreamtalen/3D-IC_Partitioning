@@ -40,17 +40,21 @@ def ast2graph():
                     module_area_dict[line[0][10:]] = float(line[1])
     for module in module_list:
         if module not in module_area_dict.keys():
-            print module
+            # print module
             module_area_dict[module] = 1500.0
 
-    print module_area_dict
+    # print module_area_dict
 
     # hypergraph completed
     return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict
 
 def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor):
-    left_module_list = module_list[:len(module_list)/2]
-    right_module_list = module_list[len(module_list)/2:]
+    # left_module_list = module_list[:len(module_list)/2]
+    # right_module_list = module_list[len(module_list)/2:]
+    initial_left = random.sample(module_list, len(module_list)/2)
+    initial_right = [module for module in module_list if module not in initial_left]
+    left_module_list = initial_left[:]
+    right_module_list = initial_right[:]
     # print left_module_list
     # print right_module_list
 
@@ -68,6 +72,9 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     print low_border, high_border, sum(module_area_dict.values())
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
+
+    initial_cut = len([net for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
+    print initial_cut
 
     while len(locked) < len(module_list):
         module_sorted = sorted(module_gain_dict.keys(), key=lambda k: module_gain_dict[k], reverse=True)
@@ -104,8 +111,8 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     max_gain_list = gain_list[:step]
     print max_gain_step
     print max_gain_list
-    left_module_list = module_list[:len(module_list)/2]
-    right_module_list = module_list[len(module_list)/2:]
+    left_module_list = initial_left[:]
+    right_module_list = initial_right[:]
     for module in max_gain_step:
         if module in left_module_list:
             left_module_list.remove(module)
@@ -117,6 +124,10 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     print right_module_list
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
+
+    sum_cut = len([net for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
+    print sum_cut
+    print "cut number reduced: ", initial_cut - sum_cut
 
 def area_constraint(module, low_border, high_border, left_module_list, module_area_dict):
     if module in left_module_list:
