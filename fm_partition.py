@@ -29,7 +29,21 @@ def ast2graph():
         wire_module_dict[wire] = wire_module_list
     # print wire_module_dict
 
-    module_area_dict = {module:random.randint(1,5) for module in module_list}
+    # module_area_dict = {module:random.randint(1,5) for module in module_list}
+    module_area_dict = {}
+    # print module_list
+    with open("area_report_hierarchy.rpt") as f:
+        for line in f.readlines():
+            line = line.strip().split()
+            if line:
+                if line[0][10:] in module_list:
+                    module_area_dict[line[0][10:]] = float(line[1])
+    for module in module_list:
+        if module not in module_area_dict.keys():
+            print module
+            module_area_dict[module] = 1500.0
+
+    print module_area_dict
 
     # hypergraph completed
     return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict
