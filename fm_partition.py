@@ -61,7 +61,6 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     #initial partition
     # print FS('inst_mem_ctrl_tran',module_wire_dict,wire_module_dict,left_module_list,right_module_list)
     # print TE('inst_mem_ctrl_tran',module_wire_dict,wire_module_dict,left_module_list,right_module_list)
-    module_gain_dict = {module: FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) for module in module_list}
     # print module_gain_dict
     locked = []
     gain_list = []
@@ -75,51 +74,66 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
 
     initial_cut = len([net for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
     print initial_cut
-
-    while len(locked) < len(module_list):
-        module_sorted = sorted(module_gain_dict.keys(), key=lambda k: module_gain_dict[k], reverse=True)
-        try:
-            module_chosen = [module for module in module_sorted if module not in locked and area_constraint(module, low_border, high_border, left_module_list, module_area_dict)][0]
-        except:
-            break
-        # print 'choose', module_chosen, sum([module_area_dict[k] for k in left_module_list]) - module_area_dict[module_chosen]
-        locked.append(module_chosen)
-        gain_list.append(module_gain_dict[module_chosen])
-        step_list.append(module_chosen)
-        # print module_chosen
-        critical_nets = module_wire_dict[module_chosen]
-        if module_chosen in left_module_list:
-            left_module_list.remove(module_chosen)
-            right_module_list.append(module_chosen)
-        else:
-            left_module_list.append(module_chosen)
-            right_module_list.remove(module_chosen)
-        # move module_chosen
-        for net in critical_nets:
-            for module in wire_module_dict[net]:
-                module_gain_dict[module] = FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list)
-        # updated gain
-    # print gain_list
-    # print step_list
-    max_gain, step = 0, 0
-    for i in range(len(gain_list)):
-        if sum(gain_list[0:i]) > max_gain:
-            max_gain = sum(gain_list[:i])
-            step = i
-    # print max_gain, step
-    max_gain_step = step_list[:step]
-    max_gain_list = gain_list[:step]
-    print max_gain_step
-    print max_gain_list
     left_module_list = initial_left[:]
     right_module_list = initial_right[:]
-    for module in max_gain_step:
-        if module in left_module_list:
-            left_module_list.remove(module)
-            right_module_list.append(module)
-        else:
-            left_module_list.append(module)
-            right_module_list.remove(module)
+    # module_gain_dict = {module: FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) for module in module_list}
+
+    while True:
+        initial_left = left_module_list[:]
+        initial_right = right_module_list[:]
+        module_gain_dict = {module: FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) for module in module_list}
+        # print right_module_list
+        while len(locked) < len(module_list):
+            module_sorted = sorted(module_gain_dict.keys(), key=lambda k: module_gain_dict[k], reverse=True)
+            try:
+                module_chosen = [module for module in module_sorted if module not in locked and area_constraint(module, low_border, high_border, left_module_list, module_area_dict)][0]
+            except:
+                break
+            # print 'choose', module_chosen, sum([module_area_dict[k] for k in left_module_list]) - module_area_dict[module_chosen]
+            locked.append(module_chosen)
+            gain_list.append(module_gain_dict[module_chosen])
+            step_list.append(module_chosen)
+            # print module_chosen
+            critical_nets = module_wire_dict[module_chosen]
+            if module_chosen in left_module_list:
+                left_module_list.remove(module_chosen)
+                right_module_list.append(module_chosen)
+            else:
+                left_module_list.append(module_chosen)
+                right_module_list.remove(module_chosen)
+            # move module_chosen
+            for net in critical_nets:
+                for module in wire_module_dict[net]:
+                    module_gain_dict[module] = FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list)
+            # updated gain
+        # print gain_list
+        # print step_list
+        max_gain, step = 0, 0
+        for i in range(len(gain_list)):
+            if sum(gain_list[0:i]) > max_gain:
+                max_gain = sum(gain_list[:i])
+                step = i
+        # print max_gain, step
+        max_gain_step = step_list[:step]
+        max_gain_list = gain_list[:step]
+        print sum(max_gain_list)
+        if sum(max_gain_list) <= 0:
+            left_module_list = initial_left
+            right_module_list = initial_right
+            break
+        print max_gain_step
+        print max_gain_list
+        left_module_list = initial_left
+        right_module_list = initial_right
+        for module in max_gain_step:
+            if module in left_module_list:
+                left_module_list.remove(module)
+                right_module_list.append(module)
+            else:
+                left_module_list.append(module)
+                right_module_list.remove(module)
+        locked, gain_list, step_list = [], [], []
+
     print left_module_list
     print right_module_list
     print sum([module_area_dict[k] for k in left_module_list])
