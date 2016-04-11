@@ -4,13 +4,25 @@ def ast2graph():
     module_wire_dict = {}
     module_list = []
     wire_list = []
-    with open("idct_module.ast") as f:
+    left_module_list, right_module_list = [], []
+    with open("tier1.ast") as f:
         for line in f.readlines():
             if line:
                 type, name = line.strip().split()
                 if type == 'module':
                     this_module = name
                     module_wire_dict[this_module] = []
+                    left_module_list.append(this_module)
+                if type == 'port':
+                    module_wire_dict[this_module].append(name)
+    with open("tier2.ast") as f:
+        for line in f.readlines():
+            if line:
+                type, name = line.strip().split()
+                if type == 'module':
+                    this_module = name
+                    module_wire_dict[this_module] = []
+                    right_module_list.append(this_module)
                 if type == 'port':
                     module_wire_dict[this_module].append(name)
     for key, value in module_wire_dict.items():
@@ -25,19 +37,42 @@ def ast2graph():
 
     wire_module_dict = {}
     for wire in wire_list:
-        wire_module_dict[wire] = [module for module in module_list if wire in module_wire_dict[module]]
+        wire_module_dict[wire] = []
+    # for wire in wire_list:
+    #     wire_module_list = [module for module in module_list if wire in module_wire_dict[module]]
+    #     wire_module_dict[wire] = wire_module_list
+    for module in module_list:
+        this_wire_list = module_wire_dict[module]
+        for wire in this_wire_list:
+            wire_module_dict[wire].append(module)
+
+    # print left_module_list
+    # print right_module_list
     # print wire_module_dict
 
     # module_area_dict = {module:random.randint(1,5) for module in module_list}
     module_area_dict = {}
     # print module_list
-    with open("area_report_hierarchy.rpt") as f:
-        for line in f.readlines():
+    with open("area_report_me_chip.rpt") as f:
+        line_list = f.readlines()
+        for index, line in enumerate(line_list):
             line = line.strip().split()
-            if line:
-                if line[0][10:] in module_list:
-                    module_area_dict[line[0][10:]] = float(line[1])
-    print module_area_dict
+            try:
+                if line:
+                    if line[0][25:] in module_list:
+                        try:
+                            module_area_dict[line[0][25:]] = float(line[1])
+                        except:
+                            next_line = line_list[index+1]
+                            module_area_dict[line[0][25:]] = float(next_line.strip().split()[0])
+                    elif line[0][39:] in module_list:
+                        try:
+                            module_area_dict[line[0][39:]] = float(line[1])
+                        except:
+                            next_line = line_list[index+1]
+                            module_area_dict[line[0][39:]] = float(next_line.strip().split()[0])
+            except: pass
+    # print module_area_dict
     for module in module_list:
         if module not in module_area_dict.keys():
             # print module
@@ -173,6 +208,6 @@ def TE_net(net, net_module_list, left_module_list,right_module_list):
     return len([module for module in net_module_list if module in left_module_list]) == 0 or len([module for module in net_module_list if module in right_module_list]) == 0
 
 if __name__ == '__main__':
-    module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict = ast2graph()
+    module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, left_module_list, right_module_list = ast2graph()
     factor = 0.5
-    fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor)
+    # fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor)
