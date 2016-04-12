@@ -75,21 +75,47 @@ def ast2graph():
     # print module_area_dict
     for module in module_list:
         if module not in module_area_dict.keys():
-            # print module
-            module_area_dict[module] = 1500.0
+            if 'U' in module:
+                module_area_dict[module] = 3.6
+            elif 'abs_outs_reg_reg_' in module:
+                module_area_dict[module] = 9.36
+            elif '_reg' in module:
+                module_area_dict[module] = 9.0
+            elif module == 'inst_current_block_memcluster':
+                module_area_dict[module] = 101052.1094
+            elif 'inst_minisad_tree_buffer_' in module:
+                module_area_dict[module] = 2397.6000
+            elif 'inst_merge_mem_' in module:
+                module_area_dict[module] = 6202.5712
+            elif 'inst_output_buffer_' in module:
+                module_area_dict[module] = 462.6
+            elif 'inst_output_buffer_final' in module:
+                module_area_dict[module] = 601.5600
+            elif module == 'inst_sad_tree_2':
+                module_area_dict[module] = 837.7200
+            elif module == 'inst_sad_tree_1':
+                module_area_dict[module] = 3617.2800
+            else:
+                # print module
+                module_area_dict[module] = 10
+            # module_area_dict[module] = 1500.0
 
     # print module_area_dict
 
     # hypergraph completed
-    return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict
+    return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, left_module_list, right_module_list
 
-def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor):
+def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, left_module_list, right_module_list):
     # left_module_list = module_list[:len(module_list)/2]
     # right_module_list = module_list[len(module_list)/2:]
-    initial_left = random.sample(module_list, len(module_list)/2)
-    initial_right = [module for module in module_list if module not in initial_left]
-    left_module_list = initial_left[:]
-    right_module_list = initial_right[:]
+
+    # initial_left = random.sample(module_list, len(module_list)/2)
+    # initial_right = [module for module in module_list if module not in initial_left]
+    # left_module_list = initial_left[:]
+    # right_module_list = initial_right[:]
+    initial_left = left_module_list[:]
+    initial_right = right_module_list[:]
+
     # print left_module_list
     # print right_module_list
 
@@ -210,4 +236,4 @@ def TE_net(net, net_module_list, left_module_list,right_module_list):
 if __name__ == '__main__':
     module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, left_module_list, right_module_list = ast2graph()
     factor = 0.5
-    # fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor)
+    fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, left_module_list, right_module_list)
