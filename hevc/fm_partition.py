@@ -5,7 +5,7 @@ def ast2graph():
     module_list = []
     wire_list = []
     left_module_list, right_module_list = [], []
-    with open("tier1.ast") as f:
+    with open("tier2.ast") as f:
         for line in f.readlines():
             if line:
                 type, name = line.strip().split()
@@ -15,7 +15,7 @@ def ast2graph():
                     left_module_list.append(this_module)
                 if type == 'port':
                     module_wire_dict[this_module].append(name)
-    with open("tier2.ast") as f:
+    with open("tier1.ast") as f:
         for line in f.readlines():
             if line:
                 type, name = line.strip().split()
@@ -105,7 +105,7 @@ def ast2graph():
     # hypergraph completed
     return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, left_module_list, right_module_list
 
-@profile
+# @profile
 def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, left_module_list, right_module_list):
 
     # initial_left = left_module_list[:]
@@ -115,9 +115,11 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     gain_list = []
     step_list = []
 
-    low_border = factor*sum(module_area_dict.values()) - max(module_area_dict.values())
-    high_border = factor*sum(module_area_dict.values()) + max(module_area_dict.values())
-    print low_border, high_border, sum(module_area_dict.values())
+    total_area = sum([module_area_dict[k] for k in left_module_list]) + sum([module_area_dict[k] for k in right_module_list])
+
+    low_border = factor*total_area - max(module_area_dict.values())
+    high_border = factor*total_area + max(module_area_dict.values())
+    print low_border, high_border, total_area
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
 
@@ -141,7 +143,7 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
                     break
             if not module_chosen:
                 break
-            # print module_chosen, module_gain_dict[module_chosen]
+            print module_chosen, module_gain_dict[module_chosen]
             # print 'choose', module_chosen, sum([module_area_dict[k] for k in left_module_list]) - module_area_dict[module_chosen]
             locked.append(module_chosen)
             gain_list.append(module_gain_dict[module_chosen])
@@ -163,9 +165,9 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
         print step_list
         max_gain, step = 0, 0
         for i in range(len(gain_list)):
-            if sum(gain_list[0:i]) > max_gain:
-                max_gain = sum(gain_list[:i])
-                step = i
+            if sum(gain_list[0:i+1]) > max_gain:
+                max_gain = sum(gain_list[:i+1])
+                step = i+1
         # print max_gain, step
         max_gain_step = step_list[:step]
         max_gain_list = gain_list[:step]
@@ -237,5 +239,5 @@ def TE_net(net, net_module_list, left_module_list,right_module_list):
 
 if __name__ == '__main__':
     module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, left_module_list, right_module_list = ast2graph()
-    factor = 0.5
+    factor = 0.55
     fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, left_module_list, right_module_list)

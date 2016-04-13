@@ -67,14 +67,16 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     gain_list = []
     step_list = []
 
-    low_border = factor*sum(module_area_dict.values()) - max(module_area_dict.values())
-    high_border = factor*sum(module_area_dict.values()) + max(module_area_dict.values())
-    print low_border, high_border, sum(module_area_dict.values())
+    total_area = sum([module_area_dict[k] for k in left_module_list]) + sum([module_area_dict[k] for k in right_module_list])
+    low_border = factor*total_area - max(module_area_dict.values())
+    high_border = factor*total_area + max(module_area_dict.values())
+    print low_border, high_border, total_area
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
 
     initial_cut = len([net for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
     print initial_cut
+
 
     module_gain_dict = {module: FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) for module in module_list}
 
@@ -119,13 +121,14 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
 
 
             # updated gain
-        # print gain_list
-        # print step_list
+        print gain_list
+        print step_list
         max_gain, step = 0, 0
         for i in range(len(gain_list)):
-            if sum(gain_list[0:i]) > max_gain:
-                max_gain = sum(gain_list[:i])
-                step = i
+            if sum(gain_list[0:i+1]) > max_gain:
+                max_gain = sum(gain_list[:i+1])
+                step = i+1
+        print 'step',step
         # print max_gain, step
         max_gain_step = step_list[:step]
         max_gain_list = gain_list[:step]
@@ -134,8 +137,8 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
             left_module_list = initial_left
             right_module_list = initial_right
             break
-        # print max_gain_step
-        # print max_gain_list
+        print max_gain_step
+        print max_gain_list
         left_module_list = initial_left
         right_module_list = initial_right
         module_gain_dict = initial_gain_dict
