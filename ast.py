@@ -21,6 +21,26 @@ class Node(object):
                 vlist = [getattr(self,n) for n in self.attr_names]
                 identifier_name = ' '.join('%s' % v for v in vlist)
                 print('port', identifier_name)
+        if self.__class__.__name__ == 'Wire':
+            if self.attr_names:
+                vlist = [getattr(self,n) for n in self.attr_names]
+                identifier_name = vlist[0]
+                print('net', identifier_name)
+        if self.__class__.__name__ == 'Input':
+            if self.attr_names:
+                vlist = [getattr(self,n) for n in self.attr_names]
+                identifier_name = vlist[0]
+                print('net', identifier_name)
+        if self.__class__.__name__ == 'Output':
+            if self.attr_names:
+                vlist = [getattr(self,n) for n in self.attr_names]
+                identifier_name = vlist[0]
+                print('net', identifier_name)
+        if self.__class__.__name__ == 'IntConst':
+            if self.attr_names:
+                vlist = [getattr(self,n) for n in self.attr_names]
+                identifier_name = vlist[0]
+                print('width', identifier_name)
         for c in self.children():
             c.show()
             

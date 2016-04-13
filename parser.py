@@ -9,6 +9,7 @@ from pyverilog.vparser.plyparser import PLYParser, Coord, ParseError
 from pyverilog.vparser.preprocessor import VerilogPreprocessor
 from pyverilog.vparser.lexer import VerilogLexer
 from ast import *
+# from pyverilog.vparser.ast import *
 
 class VerilogParser(PLYParser):
     precedence = (
