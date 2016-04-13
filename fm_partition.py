@@ -3,26 +3,39 @@ import copy
 
 def ast2graph():
     module_wire_dict = {}
+    wire_weight_dict = {}
     module_list = []
     wire_list = []
-    with open("idct_module.ast") as f:
+    net_list = []
+    with open("test1.ast") as f:
         for line in f.readlines():
             if line:
                 type, name = line.strip().split()
+                if type == 'net':
+                    this_net = name
+                    wire_list.append(name)
+                    wire_weight_dict[name] = 1
+                if type == 'width':
+                    if name is not '0' and this_net:
+                        wire_weight_dict[this_net] = int(name) + 1
+                        this_net = ''
                 if type == 'module':
                     this_module = name
                     module_wire_dict[this_module] = []
-                if type == 'port':
+                if type == 'port' and this_module:
                     module_wire_dict[this_module].append(name)
     for key, value in module_wire_dict.items():
         module_wire_dict[key] = list(set(value))
         module_list.append(key)
-        wire_list += value
+        # wire_list += value
     # print module_wire_dict
 
     # print module_list
-    wire_list = list(set(wire_list))
+    # wire_list = list(set(wire_list))
     # print wire_list
+    # print net_list
+    print len(wire_list)
+    print wire_weight_dict
 
     wire_module_dict = {}
     for wire in wire_list:
@@ -121,8 +134,8 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
 
 
             # updated gain
-        print gain_list
-        print step_list
+        # print gain_list
+        # print step_list
         max_gain, step = 0, 0
         for i in range(len(gain_list)):
             if sum(gain_list[0:i+1]) > max_gain:
