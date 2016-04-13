@@ -6,7 +6,6 @@ def ast2graph():
     wire_weight_dict = {}
     module_list = []
     wire_list = []
-    net_list = []
     with open("test1.ast") as f:
         for line in f.readlines():
             if line:
@@ -60,9 +59,9 @@ def ast2graph():
     # print module_area_dict
 
     # hypergraph completed
-    return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict
+    return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict
 
-def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor):
+def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
     # left_module_list = module_list[:len(module_list)/2]
     # right_module_list = module_list[len(module_list)/2:]
     initial_left = random.sample(module_list, len(module_list)/2)
@@ -87,11 +86,13 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
 
-    initial_cut = len([net for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
+    initial_cut = sum([wire_weight_dict[net] for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
     print initial_cut
 
 
-    module_gain_dict = {module: FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) for module in module_list}
+    module_gain_dict = {module: FS(module, module_wire_dict, wire_module_dict, left_module_list, right_module_list,wire_weight_dict)
+                                - TE(module, module_wire_dict, wire_module_dict, left_module_list, right_module_list,wire_weight_dict)
+                        for module in module_list}
 
 
     while True:
@@ -128,7 +129,10 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
             critical_nets = module_wire_dict[module_chosen]
             for net in critical_nets:
                 for module in wire_module_dict[net]:
-                    module_gain_dict[module] = FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list)
+                    module_gain_dict[module] = FS(module, module_wire_dict, wire_module_dict, left_module_list,
+                                                  right_module_list, wire_weight_dict) - TE(module, module_wire_dict,
+                                                                              wire_module_dict, left_module_list,
+                                                                              right_module_list,wire_weight_dict)
             # module_gain_dict[module_chosen] = FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list)
             # print module_chosen, module_gain_dict[module_chosen]
 
@@ -165,7 +169,8 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
             critical_nets = module_wire_dict[module]
             for net in critical_nets:
                 for module in wire_module_dict[net]:
-                    module_gain_dict[module] = FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list)
+                    module_gain_dict[module] = FS(module, module_wire_dict, wire_module_dict, left_module_list,right_module_list,wire_weight_dict)\
+                                               - TE(module, module_wire_dict,wire_module_dict, left_module_list,right_module_list,wire_weight_dict)
 
         locked, gain_list, step_list = [], [], []
 
@@ -174,7 +179,7 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
 
-    sum_cut = len([net for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
+    sum_cut = sum([wire_weight_dict[net] for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
     print sum_cut
     print "cut number reduced: ", initial_cut - sum_cut
 
@@ -190,9 +195,9 @@ def area_constraint(module, low_border, high_border, left_module_list, module_ar
             return True
         else: return False
 
-def FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list):
+def FS(module, module_wire_dict, wire_module_dict, left_module_list, right_module_list, wire_weight_dict):
     all_net = module_wire_dict[module]
-    return len([net for net in all_net if FS_net(net, wire_module_dict[net], module, left_module_list,right_module_list)])
+    return sum([wire_weight_dict[net] for net in all_net if FS_net(net, wire_module_dict[net], module, left_module_list,right_module_list)])
 
 def FS_net(net, net_module_list, module, left_module_list, right_module_list):
     if module in left_module_list:
@@ -203,15 +208,15 @@ def FS_net(net, net_module_list, module, left_module_list, right_module_list):
         return len(set(net_module_list).intersection(set(right_module_list))) == 1
 
 
-def TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list):
+def TE(module, module_wire_dict, wire_module_dict, left_module_list, right_module_list, wire_weight_dict):
     all_net = module_wire_dict[module]
-    return len([net for net in all_net if TE_net(net, wire_module_dict[net], left_module_list,right_module_list)])
+    return sum([wire_weight_dict[net] for net in all_net if TE_net(net, wire_module_dict[net], left_module_list,right_module_list)])
 
 def TE_net(net, net_module_list, left_module_list,right_module_list):
     # return len([module for module in net_module_list if module in left_module_list]) == 0 or len([module for module in net_module_list if module in right_module_list]) == 0
     return len(set(net_module_list).intersection(set(left_module_list))) == 0 or len(set(net_module_list).intersection(set(right_module_list))) == 0
 
 if __name__ == '__main__':
-    module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict = ast2graph()
+    module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
     factor = 0.5
-    fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor)
+    fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
