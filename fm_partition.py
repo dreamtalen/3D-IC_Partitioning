@@ -33,6 +33,7 @@ def ast2graph():
     # wire_list = list(set(wire_list))
     # print wire_list
     # print net_list
+    print len(module_list)
     print len(wire_list)
     print wire_weight_dict
 
@@ -54,7 +55,7 @@ def ast2graph():
     for module in module_list:
         if module not in module_area_dict.keys():
             # print module
-            module_area_dict[module] = 1500.0
+            module_area_dict[module] = 3.6
 
     # print module_area_dict
 
@@ -62,12 +63,18 @@ def ast2graph():
     return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict
 
 def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
+    low_border = 500000
+    high_border = 600000
     # left_module_list = module_list[:len(module_list)/2]
     # right_module_list = module_list[len(module_list)/2:]
     initial_left = random.sample(module_list, len(module_list)/2)
+    while not low_border < sum([module_area_dict[k] for k in initial_left]) < high_border:
+        initial_left = random.sample(module_list, len(module_list)/2)
+
     initial_right = [module for module in module_list if module not in initial_left]
     left_module_list = initial_left[:]
     right_module_list = initial_right[:]
+
     # print left_module_list
     # print right_module_list
 
@@ -80,8 +87,9 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     step_list = []
 
     total_area = sum([module_area_dict[k] for k in left_module_list]) + sum([module_area_dict[k] for k in right_module_list])
-    low_border = factor*total_area - max(module_area_dict.values())
-    high_border = factor*total_area + max(module_area_dict.values())
+    # low_border = factor*total_area - max(module_area_dict.values())
+    # high_border = factor*total_area + max(module_area_dict.values())
+
     print low_border, high_border, total_area
     print sum([module_area_dict[k] for k in left_module_list])
     print sum([module_area_dict[k] for k in right_module_list])
@@ -187,11 +195,14 @@ def area_constraint(module, low_border, high_border, left_module_list, module_ar
     if module in left_module_list:
         left_area =  sum([module_area_dict[module] for module in left_module_list]) - module_area_dict[module]
         if low_border <= left_area <= high_border:
+            # print 'left',left_area
+            # print module, module_area_dict[module]
             return True
         else: return False
     else:
         left_area =  sum([module_area_dict[module] for module in left_module_list]) + module_area_dict[module]
         if low_border <= left_area <= high_border:
+            # print 'right', left_area
             return True
         else: return False
 
