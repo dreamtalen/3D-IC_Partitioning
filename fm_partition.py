@@ -55,16 +55,35 @@ def ast2graph():
     for module in module_list:
         if module not in module_area_dict.keys():
             # print module
-            module_area_dict[module] = 3.6
+            module_area_dict[module] = 3600
 
     # print module_area_dict
 
     # hypergraph completed
+    # print sorted(module_area_dict.values(), reverse=True)
     return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict
+
+def three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
+    low_border = 400000
+    high_border = 500000
+    initial_a = random.sample(module_list, len(module_list)/3)
+    while not low_border < sum([module_area_dict[k] for k in initial_a]) < high_border:
+        initial_a = random.sample(module_list, len(module_list)/3)
+    left_module_list = list(set(module_list)-set(initial_a))
+    initial_b = random.sample(left_module_list, len(left_module_list)/2)
+    while not low_border < sum([module_area_dict[k] for k in initial_b]) < high_border:
+        initial_b = random.sample(left_module_list, len(left_module_list)/2)
+    initial_c = list(set(left_module_list)-set(initial_b))
+    print initial_a, sum(module_area_dict[k] for k in initial_a)
+    print initial_b, sum(module_area_dict[k] for k in initial_b)
+    print initial_c, sum(module_area_dict[k] for k in initial_c)
+    # left_module_list = initial_a[:]
+    # right_module_list = initial_right[:]
+
 
 def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
     low_border = 540000
-    high_border = 570000
+    high_border = 800000
     # left_module_list = module_list[:len(module_list)/2]
     # right_module_list = module_list[len(module_list)/2:]
     initial_left = random.sample(module_list, len(module_list)/2)
@@ -231,4 +250,5 @@ def TE_net(net, net_module_list, left_module_list,right_module_list):
 if __name__ == '__main__':
     module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
     factor = 0.5
-    fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    # fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
