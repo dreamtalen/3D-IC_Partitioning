@@ -77,6 +77,15 @@ def three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_lis
     print initial_a, sum(module_area_dict[k] for k in initial_a)
     print initial_b, sum(module_area_dict[k] for k in initial_b)
     print initial_c, sum(module_area_dict[k] for k in initial_c)
+    print calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, initial_a, initial_b, initial_c)
+
+def calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, top_module_list, middle_module_list, buttom_module_list):
+    top_buttom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, buttom_module_list)]
+    top_middle_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, middle_module_list)]
+    middle_buttom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], middle_module_list, buttom_module_list)]
+
+    double_cost_wire_list = list(set(top_buttom_wire_list) - (set(top_middle_wire_list) | set(middle_buttom_wire_list)))
+    return sum(2*wire_weight_dict[net] for net in double_cost_wire_list) + sum(wire_weight_dict[net] for net in top_middle_wire_list) + sum(wire_weight_dict[net] for net in middle_buttom_wire_list)
     # left_module_list = initial_a[:]
     # right_module_list = initial_right[:]
 
@@ -84,8 +93,6 @@ def three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_lis
 def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
     low_border = 540000
     high_border = 800000
-    # left_module_list = module_list[:len(module_list)/2]
-    # right_module_list = module_list[len(module_list)/2:]
     initial_left = random.sample(module_list, len(module_list)/2)
     while not low_border < sum([module_area_dict[k] for k in initial_left]) < high_border:
         initial_left = random.sample(module_list, len(module_list)/2)
@@ -98,8 +105,6 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     # print right_module_list
 
     #initial partition
-    # print FS('inst_mem_ctrl_tran',module_wire_dict,wire_module_dict,left_module_list,right_module_list)
-    # print TE('inst_mem_ctrl_tran',module_wire_dict,wire_module_dict,left_module_list,right_module_list)
     # print module_gain_dict
     locked = []
     gain_list = []
@@ -123,17 +128,12 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
 
 
     while True:
-        # module_gain_dict = {module: FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) for module in module_list}
         initial_gain_dict = copy.deepcopy(module_gain_dict)
         initial_left = left_module_list[:]
         initial_right = right_module_list[:]
         # print right_module_list
         while len(locked) < len(module_list):
             module_sorted = sorted(module_gain_dict.keys(), key=lambda k: module_gain_dict[k], reverse=True)
-            # try:
-            #     module_chosen = [module for module in module_sorted if module not in locked and area_constraint(module, low_border, high_border, left_module_list, module_area_dict)][0]
-            # except:
-            #     break
             module_chosen = ''
             for module in module_sorted:
                 if module not in locked and area_constraint(module, low_border, high_border, left_module_list, module_area_dict):
@@ -160,10 +160,7 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
                                                   right_module_list, wire_weight_dict) - TE(module, module_wire_dict,
                                                                               wire_module_dict, left_module_list,
                                                                               right_module_list,wire_weight_dict)
-            # module_gain_dict[module_chosen] = FS(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list) - TE(module,module_wire_dict,wire_module_dict,left_module_list,right_module_list)
             # print module_chosen, module_gain_dict[module_chosen]
-
-
             # updated gain
         # print gain_list
         # print step_list
@@ -214,15 +211,11 @@ def area_constraint(module, low_border, high_border, left_module_list, module_ar
     if module in left_module_list:
         left_area =  sum([module_area_dict[k] for k in left_module_list]) - module_area_dict[module]
         if low_border <= left_area <= high_border:
-            # print 'left',left_area,low_border,high_border
-            # print module, module_area_dict[module]
             return True
         else: return False
     else:
         left_area =  sum([module_area_dict[k] for k in left_module_list]) + module_area_dict[module]
         if low_border <= left_area <= high_border:
-            # print 'right', left_area,low_border,high_border
-            # print module, module_area_dict[module]
             return True
         else: return False
 
@@ -234,6 +227,7 @@ def FS_net(net, net_module_list, module, left_module_list, right_module_list):
     if module in left_module_list:
         # return len([module for module in net_module_list if module in left_module_list]) == 1
         return len(set(net_module_list).intersection(set(left_module_list))) == 1
+        #set.intersection equals set & set
     else:
         # return len([module for module in net_module_list if module in right_module_list]) == 1
         return len(set(net_module_list).intersection(set(right_module_list))) == 1
