@@ -74,10 +74,13 @@ def three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_lis
     while not low_border < sum([module_area_dict[k] for k in initial_b]) < high_border:
         initial_b = random.sample(left_module_list, len(left_module_list)/2)
     initial_c = list(set(left_module_list)-set(initial_b))
-    print initial_a, sum(module_area_dict[k] for k in initial_a)
-    print initial_b, sum(module_area_dict[k] for k in initial_b)
-    print initial_c, sum(module_area_dict[k] for k in initial_c)
-    print calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, initial_a, initial_b, initial_c)
+    # print initial_a, sum(module_area_dict[k] for k in initial_a)
+    # print initial_b, sum(module_area_dict[k] for k in initial_b)
+    # print initial_c, sum(module_area_dict[k] for k in initial_c)
+    cut_a = calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, initial_b, initial_a, initial_c)
+    cut_b = calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, initial_a, initial_b, initial_c)
+    cut_c = calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, initial_a, initial_c, initial_b)
+    return min(cut_a, cut_b, cut_c)
 
 def calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, top_module_list, middle_module_list, buttom_module_list):
     top_buttom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, buttom_module_list)]
@@ -91,8 +94,8 @@ def calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_lis
 
 
 def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
-    low_border = 540000
-    high_border = 800000
+    low_border = 630000
+    high_border = 700000
     initial_left = random.sample(module_list, len(module_list)/2)
     while not low_border < sum([module_area_dict[k] for k in initial_left]) < high_border:
         initial_left = random.sample(module_list, len(module_list)/2)
@@ -114,13 +117,13 @@ def fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, mod
     # low_border = factor*total_area - max(module_area_dict.values())
     # high_border = factor*total_area + max(module_area_dict.values())
 
-    print low_border, high_border, total_area
-    print sum([module_area_dict[k] for k in left_module_list])
-    print sum([module_area_dict[k] for k in right_module_list])
+    # print low_border, high_border, total_area
+    # print sum([module_area_dict[k] for k in left_module_list])
+    # print sum([module_area_dict[k] for k in right_module_list])
 
     initial_cut = sum([wire_weight_dict[net] for net in wire_list if not TE_net(net, wire_module_dict[net], left_module_list, right_module_list)])
-    print initial_cut
-
+    # print initial_cut
+    return initial_cut
 
     module_gain_dict = {module: FS(module, module_wire_dict, wire_module_dict, left_module_list, right_module_list,wire_weight_dict)
                                 - TE(module, module_wire_dict, wire_module_dict, left_module_list, right_module_list,wire_weight_dict)
@@ -245,4 +248,14 @@ if __name__ == '__main__':
     module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
     factor = 0.5
     # fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
-    three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    # sum_cut = fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    time = 0
+    sum_cut = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    while sum_cut > 400:
+        sum_cut = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+        time+=1
+    print sum_cut, time
+    # while sum_cut > 165:
+    #     sum_cut = fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    #     time += 1
+    # print sum_cut, time
