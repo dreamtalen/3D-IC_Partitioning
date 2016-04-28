@@ -95,16 +95,17 @@ def three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_lis
     wire_list = list(set(wire_list))
     result_b, result_c = fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict, result_b, initial_c, low_border, high_border)
     result_cut = calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, result_a, result_b, result_c)
-    return result_cut
+    return result_cut, result_a, result_b, result_c
 
 
-def calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, top_module_list, middle_module_list, buttom_module_list):
-    top_buttom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, buttom_module_list)]
+def calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, top_module_list, middle_module_list, bottom_module_list):
+    top_bottom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, bottom_module_list)]
     top_middle_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, middle_module_list)]
-    middle_buttom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], middle_module_list, buttom_module_list)]
+    middle_bottom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], middle_module_list, bottom_module_list)]
 
-    double_cost_wire_list = list(set(top_buttom_wire_list) - (set(top_middle_wire_list) | set(middle_buttom_wire_list)))
-    return sum(2*wire_weight_dict[net] for net in double_cost_wire_list) + sum(wire_weight_dict[net] for net in top_middle_wire_list) + sum(wire_weight_dict[net] for net in middle_buttom_wire_list)
+    double_cost_wire_list = list(set(top_bottom_wire_list) - (set(top_middle_wire_list) | set(middle_bottom_wire_list)))
+    one_cost_top_bottom_wire_list = list(set(top_bottom_wire_list) & ( (set(top_middle_wire_list) | set(middle_bottom_wire_list)) - (set(top_middle_wire_list) & set(middle_bottom_wire_list))))
+    return sum(2*wire_weight_dict[net] for net in double_cost_wire_list) + sum(wire_weight_dict[net] for net in top_middle_wire_list) + sum(wire_weight_dict[net] for net in middle_bottom_wire_list) + sum(wire_weight_dict[net] for net in one_cost_top_bottom_wire_list)
     # left_module_list = initial_a[:]
     # right_module_list = initial_right[:]
 
@@ -262,14 +263,14 @@ def TE_net(net, net_module_list, left_module_list,right_module_list):
 if __name__ == '__main__':
     module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
     factor = 0.5
-    sum_cut = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    sum_cut, result_a, result_b, result_c = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
     # two_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
     # sum_cut = fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
     time = 0
     min_cut = sum_cut
     # sum_cut = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
     for i in range(100):
-        sum_cut = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+        sum_cut, result_a, result_b, result_c = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
         min_cut = min(min_cut, sum_cut)
     print "best cut ", min_cut
     # while sum_cut > 165:
