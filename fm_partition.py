@@ -286,10 +286,74 @@ def TE_net(net, net_module_list, left_module_list,right_module_list):
     # return len([module for module in net_module_list if module in left_module_list]) == 0 or len([module for module in net_module_list if module in right_module_list]) == 0
     return len(set(net_module_list).intersection(set(left_module_list))) == 0 or len(set(net_module_list).intersection(set(right_module_list))) == 0
 
+def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor):
+    ### initial partition
+    initial_partition_module_list = module_list[:]
+    initial_partition_list = []
+    for i in reversed(range(N)):
+        partition_i = random.sample(initial_partition_module_list, len(initial_partition_module_list)/(i+1))
+        initial_partition_list.append(partition_i)
+        initial_partition_module_list = list(set(initial_partition_module_list) - set(partition_i))
+    # for i in initial_partition_list:
+    #     print len(i), i
+
+    ### calculate initial gain
+    layer_module_list = initial_partition_list[:]
+    module_layer_dict = {}
+    for module in module_list:
+        for layer in layer_module_list:
+            if module in layer:
+                module_layer_dict[module] = layer_module_list.index(layer)
+    initial_module_layer_dict = copy.deepcopy(module_layer_dict)
+    initial_cut =sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in wire_list)
+    module_cost_dict = {}
+    for module in module_list:
+        module_cost_dict[module] = []
+        for layer in range(N):
+            module_layer_dict[module] = layer
+            module_cost_dict[module].append(sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in module_wire_dict[module]))
+        module_layer_dict[module] = initial_module_layer_dict[module]
+    # print module_cost_dict
+    module_gain_dict = {module:module_cost_dict[module][initial_module_layer_dict[module]]-min(module_cost_dict[module]) for module in module_list}
+    # print module_gain_dict
+    print module_layer_dict
+    ### fm_partition
+    locked_list = [module for module in module_list if module_gain_dict[module] == 0]
+    end_iter = 0
+    while not end_iter:
+        module_sorted = sorted(module_list, key=lambda k: module_gain_dict[k], reverse=True)
+        for module in module_sorted:
+            if module not in locked_list and module_gain_dict[module] > 0:
+                print module
+                opti_layer = module_cost_dict[module].index(min(module_cost_dict[module]))
+                module_layer_dict[module] = opti_layer
+                locked_list.append(module)
+                connected_module_list = []
+                for net in module_wire_dict[module]:
+                    for connected_module in wire_module_dict[net]:
+                        connected_module_list.append(connected_module)
+                connected_module_list = list(set(connected_module_list))
+                for connected_module in connected_module_list:
+                    now_layer = module_layer_dict[connected_module]
+                    module_cost_dict[connected_module] = []
+                    for layer in range(N):
+                        module_layer_dict[connected_module] = layer
+                        module_cost_dict[connected_module].append(sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in module_wire_dict[connected_module]))
+                    module_layer_dict[connected_module] = now_layer
+                    module_gain_dict[connected_module] = module_cost_dict[connected_module][now_layer] - min(module_cost_dict[connected_module])
+                break
+            end_iter = 1
+    end_cut = sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in wire_list)
+    print initial_cut, end_cut
+
+def wire_cost(wire, wire_weight, wire_module_list, module_layer_dict):
+    return wire_weight*(max(module_layer_dict[m] for m in wire_module_list)-min(module_layer_dict[i] for i in wire_module_list))
+
 if __name__ == '__main__':
     module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
     factor = 0.5
-
+    N = 3
+    Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
     # two_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
 
     # sum_cut, result_a, result_b, result_c = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
@@ -301,11 +365,11 @@ if __name__ == '__main__':
     # print "best cut ", min_cut
     # print sum(module_area_dict[k] for k in best_top), sum(module_area_dict[k] for k in best_middle), sum(module_area_dict[k] for k in best_bottom)
 
-    sum_cut, result_a, result_b, result_c, result_d = four_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
-    min_cut, best_a, best_b, best_c, best_d = sum_cut, result_a, result_b, result_c, result_d
-    for i in range(100):
-        sum_cut, result_a, result_b, result_c, result_d = four_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
-        if sum_cut < min_cut:
-            min_cut, best_a, best_b, best_c, best_d = sum_cut, result_a, result_b, result_c, result_d
-    print "best cut ", min_cut
-    print sum(module_area_dict[k] for k in best_a), sum(module_area_dict[k] for k in best_b), sum(module_area_dict[k] for k in best_c), sum(module_area_dict[k] for k in best_d)
+    # sum_cut, result_a, result_b, result_c, result_d = four_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    # min_cut, best_a, best_b, best_c, best_d = sum_cut, result_a, result_b, result_c, result_d
+    # for i in range(100):
+    #     sum_cut, result_a, result_b, result_c, result_d = four_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
+    #     if sum_cut < min_cut:
+    #         min_cut, best_a, best_b, best_c, best_d = sum_cut, result_a, result_b, result_c, result_d
+    # print "best cut ", min_cut
+    # print sum(module_area_dict[k] for k in best_a), sum(module_area_dict[k] for k in best_b), sum(module_area_dict[k] for k in best_c), sum(module_area_dict[k] for k in best_d)
