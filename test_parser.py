@@ -2,7 +2,7 @@ from parser import parse
 
 def main():
 
-    filelist = ['idct_module.v']
+    filelist = ['idct_origin.v']
 
     ast, directives = parse(filelist)
     ast.show(showlineno=False)

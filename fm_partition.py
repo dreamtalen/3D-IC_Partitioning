@@ -26,16 +26,6 @@ def ast2graph():
     for key, value in module_wire_dict.items():
         module_wire_dict[key] = list(set(value))
         module_list.append(key)
-        # wire_list += value
-    # print module_wire_dict
-
-    # print module_list
-    # wire_list = list(set(wire_list))
-    # print wire_list
-    # print net_list
-    # print len(module_list)
-    # print len(wire_list)
-    # print wire_weight_dict
 
     wire_module_dict = {}
     for wire in wire_list:
@@ -60,8 +50,58 @@ def ast2graph():
     # print module_area_dict
 
     # hypergraph completed
-    # print sorted(module_area_dict.values(), reverse=True)
     return module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict
+
+def parser_area_report():
+    design_area_dict = {}
+    with open("area_report_hierarchy.rpt") as f:
+        for line in f.readlines():
+            line = line.strip().split()
+            if len(line) == 6 or len(line) == 7:
+                design_area_dict[line[-1]] = float(line[-6])
+    return design_area_dict
+
+def ast2graph_module(top_module_name, prefix=''):
+    module_wire_dict = {}
+    wire_weight_dict = {}
+    module_design_dict = {}
+    module_list = []
+    wire_list = []
+    design_list = []
+    this_design = ''
+    with open("idct_origin_full.ast") as f:
+        for line in f.readlines():
+            if line:
+                content_list = line.strip().split()
+                type = content_list[0]
+                name = content_list[1]
+                if type == 'moduleDef':
+                    this_design = name
+                if type == 'net' and this_design == top_module_name:
+                    this_net = name
+                    wire_list.append(name)
+                    wire_weight_dict[name] = 1
+                if type == 'width' and this_design == top_module_name:
+                    if name is not '0' and this_net:
+                        wire_weight_dict[this_net] = int(name) + 1
+                        this_net = ''
+                if type == 'module' and this_design == top_module_name:
+                    this_module = top_module_name+'_'+name if not prefix else prefix+'_'+top_module_name+'_'+name
+                    module_wire_dict[this_module] = []
+                    module_design_dict[this_module] = content_list[2]
+                if type == 'port' and this_design == top_module_name and this_module:
+                    module_wire_dict[this_module].append(name)
+    for key, value in module_wire_dict.items():
+        module_wire_dict[key] = list(set(value))
+        module_list.append(key)
+        design_list.append(module_design_dict[key])
+
+    wire_module_dict = {}
+    for wire in wire_list:
+        wire_module_dict[wire] = [module for module in module_list if wire in module_wire_dict[module]]
+
+
+    return module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict
 
 def three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
     low_border = 420000
@@ -97,7 +137,6 @@ def three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_lis
     result_cut = calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, result_a, result_b, result_c)
     return result_cut, result_a, result_b, result_c
 
-
 def calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_list, top_module_list, middle_module_list, bottom_module_list):
     top_bottom_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, bottom_module_list)]
     top_middle_wire_list = [net for net in wire_list if not TE_net(net, wire_module_dict[net], top_module_list, middle_module_list)]
@@ -108,7 +147,6 @@ def calculate_cut(module_wire_dict, wire_module_dict, wire_weight_dict, wire_lis
     return sum(2*wire_weight_dict[net] for net in double_cost_wire_list) + sum(wire_weight_dict[net] for net in top_middle_wire_list) + sum(wire_weight_dict[net] for net in middle_bottom_wire_list) + sum(wire_weight_dict[net] for net in one_cost_top_bottom_wire_list)
     # left_module_list = initial_a[:]
     # right_module_list = initial_right[:]
-
 
 def two_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict):
     low_border = 630000
@@ -277,7 +315,6 @@ def FS_net(net, net_module_list, module, left_module_list, right_module_list):
         # return len([module for module in net_module_list if module in right_module_list]) == 1
         return len(set(net_module_list).intersection(set(right_module_list))) == 1
 
-
 def TE(module, module_wire_dict, wire_module_dict, left_module_list, right_module_list, wire_weight_dict):
     all_net = module_wire_dict[module]
     return sum([wire_weight_dict[net] for net in all_net if TE_net(net, wire_module_dict[net], left_module_list,right_module_list)])
@@ -365,6 +402,8 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     for i in partitioned_module_list:
         print len(i),  sum(module_area_dict[m] for m in i), i
 
+    return end_cut, partitioned_module_list
+
 def wire_cost(wire, wire_weight, wire_module_list, module_layer_dict):
     return wire_weight*(max(module_layer_dict[m] for m in wire_module_list)-min(module_layer_dict[i] for i in wire_module_list))
 
@@ -375,10 +414,76 @@ def N_layer_area_constraint(module, layer_area_list, low_border, high_border, th
         return False
 
 if __name__ == '__main__':
-    module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
-    factor = 0.1
-    N = 3
-    Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
+    max_split_area = 120000
+    factor = 0.3
+    N = 6
+    top_module_name = 'idct'
+    module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)
+    # print module_list
+    print len(list(set(module_list))), len(list(set(design_list)))
+    design_area_dict = parser_area_report()
+    # print design_area_dict
+    unknown_area_design_list = list(set(d for d in design_list if d not in design_area_dict.keys()))
+    for unknown_area_design in unknown_area_design_list:
+        design_area_dict[unknown_area_design] = 1500
+    module_area_dict = {module:design_area_dict[module_design_dict[module]] for module in module_list}
+    # print module_area_dict
+    total_area = sum(module_area_dict[m] for m in module_list)
+    print total_area
+    area_upper_limit = total_area/N
+    print area_upper_limit
+    unlimited_module_list = [module for module in module_list if module_area_dict[module] > area_upper_limit]
+    print unlimited_module_list
+    prefix = top_module_name
+    while unlimited_module_list:
+        decompose_module = unlimited_module_list.pop(0)
+        new_module_wire_dict, new_wire_module_dict, new_module_list, new_wire_list, new_design_list, new_wire_weight_dict, new_module_design_dict = ast2graph_module(module_design_dict[decompose_module], prefix)
+        unknown_area_design_list = list(set(d for d in new_design_list if d not in design_area_dict.keys()))
+        for unknown_area_design in unknown_area_design_list:
+            design_area_dict[unknown_area_design] = 1500
+
+        module_list.remove(decompose_module)
+        module_list += new_module_list
+
+        module_wire_dict.update(new_module_wire_dict)
+
+        wire_list = list(set(wire_list+new_wire_list))
+        for w in new_wire_list:
+            if wire_module_dict.get(w):
+                wire_module_dict[w] += new_wire_module_dict[w]
+            else:
+                wire_module_dict[w] = new_wire_module_dict[w]
+        for v in wire_module_dict.values():
+            if decompose_module in v:
+                v.remove(decompose_module)
+
+        wire_weight_dict.update(new_wire_weight_dict)
+
+        design_list = list(set(design_list+new_design_list))
+
+        module_design_dict.update(new_module_design_dict)
+
+        print len(module_list)
+        # print len(wire_list)
+
+        for m in new_module_list:
+            module_area_dict[m] = design_area_dict[module_design_dict[m]]
+            if module_area_dict[m] > area_upper_limit:
+                unlimited_module_list.append(m)
+        # for m in new_module_list:
+        #     print design_area_dict[new_module_design_dict[m]], m if design_area_dict[new_module_design_dict[m]] != 1500 else ''
+
+
+    # module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
+
+
+    mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
+    # for i in range(100):
+    #     cut, partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
+    #     if cut < mincut:
+    #         min_partitioned_module_list = partitioned_module_list
+    # print mincut, min_partitioned_module_list
+
     # two_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)
 
     # sum_cut, result_a, result_b, result_c = three_fm_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, factor, wire_weight_dict)

@@ -15,7 +15,7 @@ class Node(object):
             if self.attr_names:
                 vlist = [getattr(self,n) for n in self.attr_names]
                 instance_name = vlist[0]
-                print('module', instance_name)
+                print('module', instance_name, vlist[1])
         if self.__class__.__name__ == 'Identifier':
             if self.attr_names:
                 vlist = [getattr(self,n) for n in self.attr_names]
@@ -41,6 +41,11 @@ class Node(object):
                 vlist = [getattr(self,n) for n in self.attr_names]
                 identifier_name = vlist[0]
                 print('width', identifier_name)
+        if self.__class__.__name__ == 'ModuleDef':
+            if self.attr_names:
+                vlist = [getattr(self,n) for n in self.attr_names]
+                identifier_name = vlist[0]
+                print('moduleDef', identifier_name)
         for c in self.children():
             c.show()
             
