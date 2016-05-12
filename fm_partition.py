@@ -405,7 +405,11 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     return end_cut, partitioned_module_list
 
 def wire_cost(wire, wire_weight, wire_module_list, module_layer_dict):
-    return wire_weight*(max(module_layer_dict[m] for m in wire_module_list)-min(module_layer_dict[i] for i in wire_module_list))
+    # print wire_module_dict
+    try:
+        return wire_weight*(max(module_layer_dict[m] for m in wire_module_list)-min(module_layer_dict[i] for i in wire_module_list))
+    except:
+        return 0
 
 def N_layer_area_constraint(module, layer_area_list, low_border, high_border, this_layer, opti_layer, module_area):
     if low_border <= layer_area_list[this_layer] - module_area <= high_border and low_border <= layer_area_list[opti_layer] + module_area <= high_border:
@@ -415,8 +419,8 @@ def N_layer_area_constraint(module, layer_area_list, low_border, high_border, th
 
 if __name__ == '__main__':
     max_split_area = 120000
-    factor = 0.3
-    N = 6
+    factor = 0.2
+    N = 5
     top_module_name = 'idct'
     module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)
     # print module_list
@@ -425,7 +429,7 @@ if __name__ == '__main__':
     # print design_area_dict
     unknown_area_design_list = list(set(d for d in design_list if d not in design_area_dict.keys()))
     for unknown_area_design in unknown_area_design_list:
-        design_area_dict[unknown_area_design] = 1500
+        design_area_dict[unknown_area_design] = 150
     module_area_dict = {module:design_area_dict[module_design_dict[module]] for module in module_list}
     # print module_area_dict
     total_area = sum(module_area_dict[m] for m in module_list)
@@ -436,11 +440,13 @@ if __name__ == '__main__':
     print unlimited_module_list
     prefix = top_module_name
     while unlimited_module_list:
+        print unlimited_module_list
         decompose_module = unlimited_module_list.pop(0)
         new_module_wire_dict, new_wire_module_dict, new_module_list, new_wire_list, new_design_list, new_wire_weight_dict, new_module_design_dict = ast2graph_module(module_design_dict[decompose_module], prefix)
+
         unknown_area_design_list = list(set(d for d in new_design_list if d not in design_area_dict.keys()))
         for unknown_area_design in unknown_area_design_list:
-            design_area_dict[unknown_area_design] = 1500
+            design_area_dict[unknown_area_design] = 150
 
         module_list.remove(decompose_module)
         module_list += new_module_list
@@ -472,12 +478,13 @@ if __name__ == '__main__':
                 unlimited_module_list.append(m)
         # for m in new_module_list:
         #     print design_area_dict[new_module_design_dict[m]], m if design_area_dict[new_module_design_dict[m]] != 1500 else ''
-
+        prefix += decompose_module
 
     # module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
 
-
     mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
+
+
     # for i in range(100):
     #     cut, partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
     #     if cut < mincut:
