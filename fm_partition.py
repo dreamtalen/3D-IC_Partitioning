@@ -392,7 +392,8 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
                 break
             end_iter = 1
     end_cut = sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in wire_list)
-    print initial_cut, end_cut
+    print 'initial cut:',initial_cut
+    print 'end_cut:', end_cut
 
     partitioned_module_list = [[] for i in range(N)]
     for module in module_list:
@@ -419,8 +420,9 @@ def N_layer_area_constraint(module, layer_area_list, low_border, high_border, th
 
 if __name__ == '__main__':
     max_split_area = 120000
+    max_module_num = 1000
     factor = 0.2
-    N = 5
+    N = 6
     top_module_name = 'idct'
     module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)
     # print module_list
@@ -444,41 +446,44 @@ if __name__ == '__main__':
         decompose_module = unlimited_module_list.pop(0)
         new_module_wire_dict, new_wire_module_dict, new_module_list, new_wire_list, new_design_list, new_wire_weight_dict, new_module_design_dict = ast2graph_module(module_design_dict[decompose_module], prefix)
 
-        unknown_area_design_list = list(set(d for d in new_design_list if d not in design_area_dict.keys()))
-        for unknown_area_design in unknown_area_design_list:
-            design_area_dict[unknown_area_design] = 150
+        if len(module_list)+len(new_module_list) > max_module_num:
+            continue
+        else:
+            unknown_area_design_list = list(set(d for d in new_design_list if d not in design_area_dict.keys()))
+            for unknown_area_design in unknown_area_design_list:
+                design_area_dict[unknown_area_design] = 150
 
-        module_list.remove(decompose_module)
-        module_list += new_module_list
+            module_list.remove(decompose_module)
+            module_list += new_module_list
 
-        module_wire_dict.update(new_module_wire_dict)
+            module_wire_dict.update(new_module_wire_dict)
 
-        wire_list = list(set(wire_list+new_wire_list))
-        for w in new_wire_list:
-            if wire_module_dict.get(w):
-                wire_module_dict[w] += new_wire_module_dict[w]
-            else:
-                wire_module_dict[w] = new_wire_module_dict[w]
-        for v in wire_module_dict.values():
-            if decompose_module in v:
-                v.remove(decompose_module)
+            wire_list = list(set(wire_list+new_wire_list))
+            for w in new_wire_list:
+                if wire_module_dict.get(w):
+                    wire_module_dict[w] += new_wire_module_dict[w]
+                else:
+                    wire_module_dict[w] = new_wire_module_dict[w]
+            for v in wire_module_dict.values():
+                if decompose_module in v:
+                    v.remove(decompose_module)
 
-        wire_weight_dict.update(new_wire_weight_dict)
+            wire_weight_dict.update(new_wire_weight_dict)
 
-        design_list = list(set(design_list+new_design_list))
+            design_list = list(set(design_list+new_design_list))
 
-        module_design_dict.update(new_module_design_dict)
+            module_design_dict.update(new_module_design_dict)
 
-        print len(module_list)
-        # print len(wire_list)
+            print len(module_list)
+            # print len(wire_list)
 
-        for m in new_module_list:
-            module_area_dict[m] = design_area_dict[module_design_dict[m]]
-            if module_area_dict[m] > area_upper_limit:
-                unlimited_module_list.append(m)
-        # for m in new_module_list:
-        #     print design_area_dict[new_module_design_dict[m]], m if design_area_dict[new_module_design_dict[m]] != 1500 else ''
-        prefix += decompose_module
+            for m in new_module_list:
+                module_area_dict[m] = design_area_dict[module_design_dict[m]]
+                if module_area_dict[m] > area_upper_limit:
+                    unlimited_module_list.append(m)
+            # for m in new_module_list:
+            #     print design_area_dict[new_module_design_dict[m]], m if design_area_dict[new_module_design_dict[m]] != 1500 else ''
+            prefix += decompose_module
 
     # module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict= ast2graph()
 
