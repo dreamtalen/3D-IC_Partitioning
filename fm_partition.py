@@ -336,6 +336,7 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     low_border = average_area*(1-factor)
     high_border = average_area*(1+factor)
     print low_border, high_border
+    ##### random initial partition
     # for i in reversed(range(N)):
     #     partition_i = random.sample(initial_partition_module_list, len(initial_partition_module_list)/(i+1))
     #     while not low_border <= sum(module_area_dict[m] for m in partition_i) <= high_border:
@@ -344,32 +345,77 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     #     initial_partition_module_list = list(set(initial_partition_module_list) - set(partition_i))
     #
 
-    initial_partition_module_list = sorted(initial_partition_module_list, key=lambda k: module_area_dict[k], reverse=True)
+    ##### area based initial partition
+    # initial_partition_module_list = sorted(initial_partition_module_list, key=lambda k: module_area_dict[k], reverse=True)
+    #
+    # for i in range(N):
+    #     current_area = sum(module_area_dict[m] for m in initial_partition_list[i])
+    #     while current_area < high_border:
+    #         try:
+    #             new_module = initial_partition_module_list.pop(0)
+    #         except:
+    #             break
+    #         if current_area + module_area_dict[new_module] < high_border:
+    #             initial_partition_list[i].append(new_module)
+    #             current_area += module_area_dict[new_module]
+    #         else:
+    #             initial_partition_module_list.insert(0, new_module)
+    #             if current_area > low_border:
+    #                 break
+    #             else:
+    #                 for k in initial_partition_module_list:
+    #                     if low_border < current_area + module_area_dict[k] < high_border:
+    #                         initial_partition_list[i].append(k)
+    #                         current_area += module_area_dict[k]
+    #                         initial_partition_module_list.remove(k)
+    #                         break
+    #             break
+    #     if i == N -1:
+    #         for m in initial_partition_module_list:
+    #             initial_partition_list[i].append(m)
+    #
+    # layer_area_list = []
+    # for i in initial_partition_list:
+    #     layer_area_list.append(sum(module_area_dict[m] for m in i))
+    #     print len(i),  sum(module_area_dict[m] for m in i)
 
+
+    ##### BFS initial partition
+    seed_module = 'idct_inst_s2p1'
+    module_waited_list = [seed_module,]
+    for w in module_wire_dict[seed_module]:
+        for m in wire_module_dict[w]:
+            if m not in module_waited_list:
+                module_waited_list.append(m)
+    remain_module_list = list(set(module_list)-set(module_waited_list))
+    while remain_module_list:
+        seed_module = random.choice(remain_module_list)
+        module_waited_list.append(seed_module)
+        remain_module_list.remove(seed_module)
+        for w in module_wire_dict[seed_module]:
+            for m in wire_module_dict[w]:
+                if m in remain_module_list:
+                    module_waited_list.append(m)
+                    remain_module_list.remove(m)
+
+    print module_waited_list
     for i in range(N):
-        current_area = sum(module_area_dict[m] for m in initial_partition_list[i])
-        while current_area < high_border:
-            try:
-                new_module = initial_partition_module_list.pop(0)
-            except:
-                break
-            if current_area + module_area_dict[new_module] < high_border:
-                initial_partition_list[i].append(new_module)
-                current_area += module_area_dict[new_module]
+        print i
+        now_area = sum(module_area_dict[m] for m in initial_partition_list[i])
+        while now_area < low_border:
+            new_module = module_waited_list[0]
+            if now_area + module_area_dict[new_module] < high_border:
+                initial_partition_list[i].append(module_waited_list.pop(0))
+                now_area += module_area_dict[new_module]
+            elif now_area < low_border:
+                new_module = module_waited_list[1]
+                if now_area + module_area_dict[new_module] < high_border:
+                    initial_partition_list[i].append(module_waited_list.pop(1))
+                    now_area += module_area_dict[new_module]
             else:
-                initial_partition_module_list.insert(0, new_module)
-                if current_area > low_border:
-                    break
-                else:
-                    for k in initial_partition_module_list:
-                        if low_border < current_area + module_area_dict[k] < high_border:
-                            initial_partition_list[i].append(k)
-                            current_area += module_area_dict[k]
-                            initial_partition_module_list.remove(k)
-                            break
                 break
-        if i == N -1:
-            for m in initial_partition_module_list:
+        if i == N-1:
+            for m in module_waited_list:
                 initial_partition_list[i].append(m)
 
     layer_area_list = []
