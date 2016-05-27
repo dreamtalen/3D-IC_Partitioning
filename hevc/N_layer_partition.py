@@ -71,29 +71,71 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     #     initial_partition_list.append(partition_i)
     #     initial_partition_module_list = list(set(initial_partition_module_list) - set(partition_i))
     #     print 'initial_partition', i
-    initial_partition_module_list = sorted(module_list, key=lambda k: module_area_dict[k], reverse=True)
+
+    # initial_partition_module_list = sorted(module_list, key=lambda k: module_area_dict[k], reverse=True)
+    # for i in range(N):
+    #     current_area = sum(module_area_dict[m] for m in initial_partition_list[i])
+    #     while current_area < average_area:
+    #         try:
+    #             new_module = initial_partition_module_list.pop(0)
+    #         except:
+    #             break
+    #         if current_area + module_area_dict[new_module] < high_border:
+    #             initial_partition_list[i].append(new_module)
+    #             current_area += module_area_dict[new_module]
+    #         else:
+    #             initial_partition_module_list.insert(0, new_module)
+    #             break
+    #     if i == N -1:
+    #         for m in initial_partition_module_list:
+    #             initial_partition_list[i].append(m)
+    # print module_list
+    seed_module = 'me_top_tier1_offset_x_d3_reg_4_'
+    module_waited_list = [seed_module,]
+    for w in module_wire_dict[seed_module]:
+        for m in wire_module_dict[w]:
+            if m not in module_waited_list:
+                module_waited_list.append(m)
+    remain_module_list = list(set(module_list)-set(module_waited_list))
+    while remain_module_list:
+        seed_module = random.choice(remain_module_list)
+        module_waited_list.append(seed_module)
+        remain_module_list.remove(seed_module)
+        for w in module_wire_dict[seed_module]:
+            for m in wire_module_dict[w]:
+                if m in remain_module_list:
+                    module_waited_list.append(m)
+                    remain_module_list.remove(m)
+
     for i in range(N):
-        current_area = sum(module_area_dict[m] for m in initial_partition_list[i])
-        while current_area < average_area:
-            try:
-                new_module = initial_partition_module_list.pop(0)
-            except:
-                break
-            if current_area + module_area_dict[new_module] < high_border:
-                initial_partition_list[i].append(new_module)
-                current_area += module_area_dict[new_module]
+        now_area = sum(module_area_dict[m] for m in initial_partition_list[i])
+        while now_area < average_area:
+            new_module = module_waited_list[0]
+            if now_area + module_area_dict[new_module] < high_border:
+                initial_partition_list[i].append(module_waited_list.pop(0))
+                now_area += module_area_dict[new_module]
+            elif now_area < low_border:
+                new_module = module_waited_list[1]
+                if now_area + module_area_dict[new_module] < high_border:
+                    initial_partition_list[i].append(module_waited_list.pop(1))
+                    now_area += module_area_dict[new_module]
             else:
-                initial_partition_module_list.insert(0, new_module)
                 break
-        if i == N -1:
-            for m in initial_partition_module_list:
-                initial_partition_list[i].append(m)
+        if i == N-1:
+            now_area = sum(module_area_dict[m] for m in initial_partition_list[i])
+            for m in module_waited_list:
+                if now_area + module_area_dict[m] < high_border:
+                    initial_partition_list[i].append(m)
+                else:
+                    initial_partition_list[0].append(m)
+
 
     layer_area_list = []
     for i in initial_partition_list:
         layer_area_list.append(sum(module_area_dict[m] for m in i))
         print len(i),  sum(module_area_dict[m] for m in i)
 
+    # return 0
     ### calculate initial gain
     layer_module_list = initial_partition_list[:]
     module_layer_dict = {}
@@ -172,7 +214,7 @@ def N_layer_area_constraint(module, layer_area_list, low_border, high_border, th
 if __name__ == '__main__':
     max_split_area = 120000
     max_module_num = 100000
-    factor = 0.1
+    factor = 0.2
     N = 3
     top_module_name = 'me_top'
     module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)

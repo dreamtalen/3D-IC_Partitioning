@@ -400,7 +400,6 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
 
     print module_waited_list
     for i in range(N):
-        print i
         now_area = sum(module_area_dict[m] for m in initial_partition_list[i])
         while now_area < low_border:
             new_module = module_waited_list[0]
