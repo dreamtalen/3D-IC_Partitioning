@@ -64,6 +64,7 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     low_border = average_area*(1-factor)
     high_border = average_area*(1+factor)
     print low_border, high_border
+
     # for i in reversed(range(N)):
     #     partition_i = random.sample(initial_partition_module_list, len(initial_partition_module_list)/(i+1))
     #     while not low_border <= sum(module_area_dict[m] for m in partition_i) <= high_border:
@@ -89,8 +90,9 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     #     if i == N -1:
     #         for m in initial_partition_module_list:
     #             initial_partition_list[i].append(m)
+
     # print module_list
-    seed_module = 'me_top_tier1_offset_x_d3_reg_4_'
+    seed_module = 'me_top_U4'
     module_waited_list = [seed_module,]
     for w in module_wire_dict[seed_module]:
         for m in wire_module_dict[w]:
@@ -109,25 +111,28 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
 
     for i in range(N):
         now_area = sum(module_area_dict[m] for m in initial_partition_list[i])
-        while now_area < average_area:
-            new_module = module_waited_list[0]
-            if now_area + module_area_dict[new_module] < high_border:
-                initial_partition_list[i].append(module_waited_list.pop(0))
-                now_area += module_area_dict[new_module]
-            elif now_area < low_border:
-                new_module = module_waited_list[1]
-                if now_area + module_area_dict[new_module] < high_border:
-                    initial_partition_list[i].append(module_waited_list.pop(1))
-                    now_area += module_area_dict[new_module]
-            else:
-                break
         if i == N-1:
-            now_area = sum(module_area_dict[m] for m in initial_partition_list[i])
             for m in module_waited_list:
                 if now_area + module_area_dict[m] < high_border:
                     initial_partition_list[i].append(m)
+                    now_area += module_area_dict[m]
                 else:
                     initial_partition_list[0].append(m)
+        else:
+            while now_area < average_area:
+                # print now_area, average_area
+                new_module = module_waited_list[0]
+                if now_area + module_area_dict[new_module] < high_border:
+                    initial_partition_list[i].append(module_waited_list.pop(0))
+                    now_area += module_area_dict[new_module]
+                elif now_area < low_border:
+                    new_module = module_waited_list[1]
+                    if now_area + module_area_dict[new_module] < high_border:
+                        initial_partition_list[i].append(module_waited_list.pop(1))
+                        now_area += module_area_dict[new_module]
+                else:
+                    break
+
 
 
     layer_area_list = []
@@ -145,6 +150,7 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
                 module_layer_dict[module] = layer_module_list.index(layer)
     initial_module_layer_dict = copy.deepcopy(module_layer_dict)
     initial_cut =sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in wire_list)
+    print initial_cut
     module_cost_dict = {}
     for module in module_list:
         module_cost_dict[module] = []
@@ -152,6 +158,7 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
             module_layer_dict[module] = layer
             module_cost_dict[module].append(sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in module_wire_dict[module]))
         module_layer_dict[module] = initial_module_layer_dict[module]
+        # print 'INITIAL cost', module, module_list.index(module)
     # print module_cost_dict
     module_gain_dict = {module:module_cost_dict[module][initial_module_layer_dict[module]]-min(module_cost_dict[module]) for module in module_list}
     # print module_gain_dict
@@ -182,6 +189,7 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
                         module_cost_dict[connected_module].append(sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in module_wire_dict[connected_module]))
                     module_layer_dict[connected_module] = now_layer
                     module_gain_dict[connected_module] = module_cost_dict[connected_module][now_layer] - min(module_cost_dict[connected_module])
+                    # print 'UPDATE gain', connected_module, connected_module_list.index(connected_module), len(connected_module_list)
                 break
             end_iter = 1
     end_cut = sum(wire_cost(wire, wire_weight_dict[wire], wire_module_dict[wire], module_layer_dict) for wire in wire_list)
@@ -204,6 +212,21 @@ def wire_cost(wire, wire_weight, wire_module_list, module_layer_dict):
         return wire_weight*(max(module_layer_dict[m] for m in wire_module_list)-min(module_layer_dict[i] for i in wire_module_list))
     except:
         return 0
+    # max_layer = 0
+    # min_layer = 9999
+    # for m in wire_module_dict:
+    #     try:
+    #         this_layer = module_layer_dict[m]
+    #     except:
+    #         this_layer = 0
+    #     if this_layer > max_layer:
+    #         max_layer = this_layer
+    #     if this_layer < min_layer:
+    #         min_layer = this_layer
+    # if max_layer-min_layer>0:
+    #     return wire_weight*(max_layer-min_layer)
+    # else:
+    #     return 0
 
 def N_layer_area_constraint(module, layer_area_list, low_border, high_border, this_layer, opti_layer, module_area):
     if low_border <= layer_area_list[this_layer] - module_area <= high_border and low_border <= layer_area_list[opti_layer] + module_area <= high_border:
@@ -214,8 +237,8 @@ def N_layer_area_constraint(module, layer_area_list, low_border, high_border, th
 if __name__ == '__main__':
     max_split_area = 120000
     max_module_num = 100000
-    factor = 0.2
-    N = 3
+    factor = 0.3
+    N = 2
     top_module_name = 'me_top'
     module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)
     # print module_list
@@ -280,6 +303,8 @@ if __name__ == '__main__':
                     unlimited_module_list.append(m)
             # prefix += decompose_module
             # print design_area_dict['sr_mem_cluster']
+    for wire in wire_list:
+        wire_module_dict[wire] = list(set(wire_module_dict[wire]))
 
     mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
 
