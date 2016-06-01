@@ -237,7 +237,7 @@ def N_layer_area_constraint(module, layer_area_list, low_border, high_border, th
 if __name__ == '__main__':
     max_split_area = 120000
     max_module_num = 100000
-    factor = 0.3
+    factor = 0.4
     N = 3
     top_module_name = 'me_top'
     module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)
@@ -308,3 +308,5 @@ if __name__ == '__main__':
 
     mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
 
+    factor = 0.5
+    mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
