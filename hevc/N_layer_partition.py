@@ -238,7 +238,7 @@ if __name__ == '__main__':
     max_split_area = 120000
     max_module_num = 100000
     factor = 0.4
-    N = 3
+    N = 2
     top_module_name = 'me_top'
     module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)
     # print module_list
