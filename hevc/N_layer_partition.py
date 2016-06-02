@@ -92,7 +92,8 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
     #             initial_partition_list[i].append(m)
 
     # print module_list
-    seed_module = 'me_top_U4'
+    seed_module = random.choice(module_list)
+    print seed_module
     module_waited_list = [seed_module,]
     for w in module_wire_dict[seed_module]:
         for m in wire_module_dict[w]:
@@ -171,7 +172,7 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
         for module in module_sorted:
             opti_layer = module_cost_dict[module].index(min(module_cost_dict[module]))
             if module not in locked_list and N_layer_area_constraint(module, layer_area_list, low_border, high_border, module_layer_dict[module], opti_layer, module_area_dict[module]) and module_gain_dict[module] > 0:
-                print module
+                # print module
                 layer_area_list[module_layer_dict[module]] -= module_area_dict[module]
                 module_layer_dict[module] = opti_layer
                 layer_area_list[opti_layer] += module_area_dict[module]
@@ -237,7 +238,7 @@ def N_layer_area_constraint(module, layer_area_list, low_border, high_border, th
 if __name__ == '__main__':
     max_split_area = 120000
     max_module_num = 100000
-    factor = 0.4
+    factor = 0.3
     N = 2
     top_module_name = 'me_top'
     module_wire_dict, wire_module_dict, module_list, wire_list, design_list, wire_weight_dict, module_design_dict = ast2graph_module(top_module_name)
@@ -294,7 +295,7 @@ if __name__ == '__main__':
 
             module_design_dict.update(new_module_design_dict)
 
-            print len(module_list)
+            # print len(module_list)
             # print len(wire_list)
 
             for m in new_module_list:
@@ -306,6 +307,9 @@ if __name__ == '__main__':
     for wire in wire_list:
         wire_module_dict[wire] = list(set(wire_module_dict[wire]))
 
+    mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
+
+    factor = 0.4
     mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
 
     factor = 0.5
