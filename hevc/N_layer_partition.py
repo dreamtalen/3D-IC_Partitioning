@@ -93,7 +93,7 @@ def Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list,
 
     # print module_list
     # seed_module = random.choice(module_list)
-    seed_module = 'me_top_tier1_U829'
+    seed_module = 'me_top_tier2_abs_outs_reg_reg_4594_'
     print seed_module
     module_waited_list = [seed_module,]
     for w in module_wire_dict[seed_module]:
@@ -313,6 +313,9 @@ if __name__ == '__main__':
         wire_module_dict[wire] = list(set(wire_module_dict[wire]))
 
     # for i in range(6):
+    factor = 0.3
+    mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
+    factor = 0.4
     mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
     # min_initial_cut = 15271
     # min_initial_area_list = []
