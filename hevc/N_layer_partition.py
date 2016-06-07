@@ -313,10 +313,10 @@ if __name__ == '__main__':
         wire_module_dict[wire] = list(set(wire_module_dict[wire]))
 
     # for i in range(6):
-    factor = 0.3
+    factor = 0.7
     mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
-    factor = 0.4
-    mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
+    # factor = 0.4
+    # mincut, min_partitioned_module_list = Nlayer_partition(module_wire_dict, wire_module_dict, module_list, wire_list, module_area_dict, wire_weight_dict, N, factor)
     # min_initial_cut = 15271
     # min_initial_area_list = []
     # for i in range(100):
