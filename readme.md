@@ -1,5 +1,9 @@
-基于HEVC运动估计模块的三维电路划分技术研究
+# 3D-IC Partitioning
 
-首先，搭建一个电路划分算法的评估平台。需要实现从电路网表文件中获取模块、连线的位置、大小等信息，将其转换为如超图等适宜的数据结构进行后续处理，目的是针对三维集成技术，建立三维集成电路划分方法的评估模型。
-然后，了解面向三维集成电路的电路划分技术研究现状和相关算法，在搭建好的评估平台中针对HEVC运动估计模块进行电路划分算法的评估与测试，如上文中提及的KL、KM、多级划分等算法，根据评估和测试结果进行后续研究。
-最后，根据各种电路划分算法的评估结果，在了解和熟悉HEVC运动估计模块的电路结构的基础上，针对给定的HEVC运动估计电路结构，开发出适宜该模块的面向三维集成的电路划分算法。
+3D IC Partitioning Technique Design Based on HEVC Motion Estimation Module.
+
+> *2016 Excellent graduate thesis in Department of Micro-Nano Electronics, Shanghai Jiao Tong University* 
+
+### Abstract
+
+In this paper, a 3D IC partitioning algorithm is designed for the motion estimation module of HEVC.  Including the initial partition algorithm based on BFS and the iterative optimization algorithm. And for HEVC motion estimation module, design a 3D IC partitioning algorithm evaluation platform, the main functions include analytic network file, comprehensive analysis of DC area report, the establishment of hypergraph data structure to describe unit circuit interconnection relations, the hierarchy structure of motion stimation circuit module according to the size of the module distribution was launched down, a variety of ways to generate an initial partition, applying partition algorithm and classification of the results of the assessment. The IDCT module and ME module using the design of three-dimensional integrated circuit partitioning algorithm is partitioned, from the number of cut edges, area utilization, and other aspects of the evaluation of the partition results. 
